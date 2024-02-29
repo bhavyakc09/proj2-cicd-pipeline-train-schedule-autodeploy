@@ -1,14 +1,13 @@
 pipeline {
     agent any
     environment {
-        //be sure to replace "bhavukm" with your own Docker Hub username
-        DOCKER_IMAGE_NAME = "bhavukm/train-schedule"
+        DOCKER_IMAGE_NAME = "bhavya04/proj2-edu"
     }
     stages {
         stage('Build') {
             steps {
                 echo 'Running build automation'
-                sh './gradlew build --no-daemon'
+                bat './gradlew build --no-daemon'
                 archiveArtifacts artifacts: 'dist/trainSchedule.zip'
             }
         }
@@ -20,7 +19,7 @@ pipeline {
                 script {
                     app = docker.build(DOCKER_IMAGE_NAME)
                     app.inside {
-                        sh 'echo Hello, World!'
+                        bat 'echo Hello, World!'
                     }
                 }
             }
@@ -46,11 +45,13 @@ pipeline {
                 CANARY_REPLICAS = 1
             }
             steps {
-                kubernetesDeploy(
-                    kubeconfigId: 'kubeconfig',
-                    configs: 'train-schedule-kube-canary.yml',
-                    enableConfigSubstitution: true
-                )
+                script {
+                    kubernetesDeploy(
+                        kubeconfigId: 'kubeconfig',
+                        configs: 'train-schedule-kube-canary.yml',
+                        enableConfigSubstitution: true
+                    )
+                }
             }
         }
         stage('DeployToProduction') {
@@ -63,16 +64,18 @@ pipeline {
             steps {
                 input 'Deploy to Production?'
                 milestone(1)
-                kubernetesDeploy(
-                    kubeconfigId: 'kubeconfig',
-                    configs: 'train-schedule-kube-canary.yml',
-                    enableConfigSubstitution: true
-                )
-                kubernetesDeploy(
-                    kubeconfigId: 'kubeconfig',
-                    configs: 'train-schedule-kube.yml',
-                    enableConfigSubstitution: true
-                )
+                script {
+                    kubernetesDeploy(
+                        kubeconfigId: 'kubeconfig',
+                        configs: 'train-schedule-kube-canary.yml',
+                        enableConfigSubstitution: true
+                    )
+                    kubernetesDeploy(
+                        kubeconfigId: 'kubeconfig',
+                        configs: 'train-schedule-kube.yml',
+                        enableConfigSubstitution: true
+                    )
+                }
             }
         }
     }
